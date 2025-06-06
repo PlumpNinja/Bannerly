@@ -1,0 +1,24 @@
+# docker-compose.yml
+version: '3.8' # Specifies the Docker Compose version
+
+services:
+  # Define our application service and call it 'bannerly'
+  bannerly:
+    # Build the Docker image from the Dockerfile in the current directory (.)
+    build: .
+    # Set a friendly name for the container
+    container_name: bannerly
+    # This policy ensures the container restarts automatically if it crashes,
+    # but not if you manually stop it. Ideal for homeservers.
+    restart: unless-stopped
+    # Map the ports. The format is "HOST:CONTAINER".
+    # This makes the app accessible on your server at http://<server-ip>:8000
+    ports:
+      - "8000:8000"
+    # Mount volumes to persist data outside the container.
+    # The format is "HOST_PATH:CONTAINER_PATH"
+    volumes:
+      # This links a folder named 'bannerly-data' on your server to the /app/data
+      # directory inside the container. It will be created automatically.
+      # All your config and database files will be stored here.
+      - ./bannerly-data:/app/data

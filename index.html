@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bannerly Web App</title>
+    <style>
+        /* General Styles */
+        html, body {
+            height: 100%; margin: 0; padding: 0; overflow: hidden;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            display: flex; flex-direction: column; align-items: center;
+            padding: 20px; background-color: #121212; color: #e0e0e0;
+            box-sizing: border-box;
+        }
+        .main-wrapper {
+            display: flex; flex-direction: column; width: 100%; max-width: 800px;
+            gap: 15px; flex-grow: 1; overflow: hidden; min-height: 0;
+        }
+        .container, .search-container, .output-area-container, .fetch-button-container {
+            background-color: #1e1e1e; padding: 15px 20px; border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); width: 100%;
+            box-sizing: border-box;
+        }
+        .container { padding: 2px 20px; margin-bottom: 0; flex-shrink: 0; }
+        h1 {
+            color: #bb86fc; text-align: center; margin-top: 0; margin-bottom: 15px;
+        }
+
+        /* Credentials Section */
+        .credentials-section { display: flex; gap: 20px; align-items: flex-start; }
+        .input-fields { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
+        .input-group input[type="text"],
+        .input-group input[type="password"] {
+            padding: 8px 12px; border: 1px solid #444; border-radius: 6px;
+            font-size: 0.95em; width: 100%; box-sizing: border-box;
+            background-color: #2c2c2c; color: #e0e0e0;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .input-group input[type="text"]::placeholder,
+        .input-group input[type="password"]::placeholder { color: #888; }
+        .input-group input[type="text"]:focus,
+        .input-group input[type="password"]:focus {
+            border-color: #bb86fc; box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.25);
+            outline: none; background-color: #333;
+        }
+        .input-group input.is-set::placeholder {
+            font-style: italic; color: #a0a0a0 !important;
+        }
+        .action-buttons { display: flex; flex-direction: column; gap: 10px; min-width: 180px; }
+        .action-buttons button {
+            padding: 9px 15px; border: none; border-radius: 6px; font-size: 0.9em;
+            font-weight: 500; cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease, opacity 0.2s ease-in-out;
+            text-align: center;
+        }
+        .action-buttons button:active { transform: translateY(1px); }
+        .action-buttons button:disabled {
+            opacity: 0.6; cursor: not-allowed;
+        }
+        #saveCredsBtn { background-color: #bb86fc; color: #121212; }
+        #saveCredsBtn:hover:not(:disabled) { background-color: #a76ef0; }
+        #saveCredsBtn:disabled { background-color: #5a4a70; color: #888; }
+        #purgeCredsBtn { background-color: #cf6679; color: #121212; }
+        #purgeCredsBtn:hover:not(:disabled) { background-color: #b85163; }
+        #purgeCredsBtn:disabled { background-color: #6e3e46; color: #888; }
+        #startAutomationBtn { background-color: #03dac6; color: #121212; }
+        #startAutomationBtn:hover:not(:disabled) { background-color: #02bfa9; }
+        #startAutomationBtn:disabled { background-color: #018786; color: #ccc; opacity: 0.7;}
+        #stopAutomationBtn { background-color: #f4511e; color: #ffffff; }
+        #stopAutomationBtn:hover:not(:disabled) { background-color: #d84315; }
+        #stopAutomationBtn:disabled { background-color: #a1360a; color: #ccc; opacity: 0.7;}
+
+        #messageArea {
+            margin-top: 2px; padding: 5px; text-align: center; font-weight: bold;
+            min-height: 20px; font-size: 0.9em; background-color: transparent; border: none;
+        }
+        .message-success { color: #3dd879; }
+        .message-error { color: #c7525e; }
+
+        /* Search Section */
+        .search-container { padding: 10px 20px; flex-shrink: 0; }
+        .search-section { display: flex; gap: 20px; align-items: center; }
+        .search-section input[type="text"] {
+            flex-grow: 1; padding: 8px 12px; border: 1px solid #444;
+            border-radius: 6px; font-size: 0.95em; background-color: #2c2c2c; color: #e0e0e0;
+        }
+        .search-section input[type="text"]:focus {
+            border-color: #bb86fc; box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.25);
+            outline: none; background-color: #333;
+        }
+        .search-section button {
+            padding: 9px 15px; border: none; border-radius: 6px; font-size: 0.9em;
+            font-weight: 500; cursor: pointer; background-color: #bb86fc; color: #121212;
+            transition: background-color 0.2s ease-in-out;
+            min-width: 175px; 
+        }
+        .search-section button:hover { background-color: #a76ef0; } 
+
+        /* Output Area & Sub-views */
+        .output-area-container {
+            flex-grow: 1; display: flex; flex-direction: column; align-items: stretch; 
+            justify-content: flex-start; min-height: 0; padding: 0; overflow: hidden;
+        }
+        .output-area-container p.placeholder-text,
+        .output-area-container .info-message,
+        .output-area-container .error-message {
+            color: #888; font-style: italic; text-align: center; padding: 20px; margin: auto;
+        }
+        .output-area-container .error-message { color: #c7525e; font-weight: bold; }
+
+        .movie-list-header, .poster-grid-header, .final-poster-header, .automation-log-header { 
+            display: flex; padding: 8px 10px; border-bottom: 1px solid #444;
+            font-size: 0.9em; font-weight: bold; background-color: #2a2a2a;
+            flex-shrink: 0; 
+            justify-content: center;
+        }
+        .movie-list-header > div { cursor: pointer; user-select: none; }
+        .movie-list-header > div:hover { color: #bb86fc; }
+        .poster-grid-header, .final-poster-header, .automation-log-header { font-size: 1.1em; color: #bb86fc; }
+
+        .movie-list-scroll-wrapper, .poster-grid-scroll-wrapper, .final-poster-scroll-wrapper, .automation-log-container {
+            flex-grow: 1; overflow-y: auto; min-height: 0;
+        }
+        
+        /* Automation Log View Specific Styles */
+        .automation-log-container {
+            background-color: #161616;
+            padding: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+        }
+        .log-entry {
+            margin: 0 0 4px 0;
+            padding: 2px 5px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+        .log-entry-timestamp {
+            color: #888;
+            margin-right: 10px;
+        }
+        .log-entry.level-INFO { color: #e0e0e0; }
+        .log-entry.level-WARN { color: #f39c12; }
+        .log-entry.level-ERROR { color: #e74c3c; font-weight: bold;}
+        .log-entry.level-CRITICAL { background-color: #c0392b; color: #fff; font-weight: bold;}
+        .log-entry.level-SUCCESS { color: #2ecc71; font-weight: bold;}
+
+
+        /* Movie List Styles */
+        .movie-item-row {
+            display: flex; padding: 8px 10px; border-bottom: 1px solid #333; font-size: 0.9em;
+            width: 100%; box-sizing: border-box;
+        }
+        .movie-item-row:hover { background-color: #2c2c2c; cursor: pointer; }
+        .movie-list-header > div, .movie-item-row > div {
+            padding: 4px 6px; box-sizing: border-box;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .col-name { flex: 3; min-width: 150px; text-align: left;}
+        .col-res { flex: 1; min-width: 60px; text-align: center; }
+        .col-hdr { flex: 1.5; min-width: 100px; text-align: center; }
+        .col-bitrate { flex: 1; min-width: 80px; text-align: center; }
+        .col-year { flex: 0.5; min-width: 50px; text-align: right; }
+
+        /* Poster Grid Styles */
+        .poster-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+            gap: 15px; padding: 15px; width: 100%; box-sizing: border-box;
+        }
+        .poster-item {
+            background-color: #2c2c2c; border: 1px solid #444; border-radius: 6px;
+            overflow: hidden; cursor: pointer;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        }
+        .poster-item:hover {
+            transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            border-color: #bb86fc;
+        }
+        .poster-item.selected {
+            border: 2px solid #bb86fc; 
+            box-shadow: 0 0 10px rgba(187, 134, 252, 0.5);
+            transform: scale(1.03); 
+        }
+        .poster-item img { width: 100%; height: auto; display: block; }
+
+        /* Final Applied Poster View Styles */
+        .final-poster-view { 
+            display: flex; flex-direction: column; align-items: center;
+            gap: 15px; padding: 10px; width: 100%;
+            max-width: 450px; box-sizing: border-box;
+        }
+        .final-poster-scroll-wrapper {
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: flex-start; padding-top: 10px; padding-bottom: 10px; 
+        }
+        .final-poster-view img {
+            max-width: 100%; height: auto; object-fit: contain;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .final-poster-view button {
+            padding: 10px 20px; border: none; border-radius: 6px; font-size: 1em;
+            font-weight: 500; cursor: pointer; background-color: #03dac6; 
+            color: #121212; transition: background-color 0.2s ease-in-out;
+        }
+        .final-poster-view button:hover { background-color: #02bfa9; }
+
+        /* Fetch Movies Button Section */
+        .fetch-button-container { padding: 10px 20px; flex-shrink: 0; }
+        #fetchMoviesBtn {
+            width: 100%; padding: 10px 15px; border: none; border-radius: 6px;
+            font-size: 1em; font-weight: 500; cursor: pointer; background-color: #bb86fc;
+            color: #121212; transition: background-color 0.2s ease-in-out;
+        }
+        #fetchMoviesBtn:hover { background-color: #a76ef0; }
+
+        /* Footer Status Bars */
+        .footer-status-bars {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; max-width: 800px; 
+            padding: 5px 0px; box-sizing: border-box; flex-shrink: 0; 
+        }
+        #statusBar1 {
+            background-color: transparent; padding: 5px 0; font-size: 0.9em;
+            font-weight: bold; text-align: right; box-shadow: none; flex-grow: 1;
+        }
+        #statusBar2 {
+            background-color: transparent; padding: 5px 0; font-size: 0.9em;
+            font-weight: bold; text-align: left; box-shadow: none; flex-grow: 1;
+            color: #03dac6;
+        }
+        #statusBar1.status-connecting { color: #f39c12; }
+        #statusBar1.status-connected { color: #2ecc71; }
+        #statusBar1.status-disconnected { color: #e74c3c; }
+        #statusBar1.status-error { color: #e67e22; }
+
+        #statusBar2.status-info { color: #03dac6; }
+        #statusBar2.status-warning { color: #f39c12; }
+        #statusBar2.status-critical { color: #cf6679; }
+        #statusBar2.status-success { color: #3dd879; }
+        #statusBar2.status-automation { color: #82aaff; }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <!-- Credentials Section -->
+        <div class="container">
+            <h1>Bannerly Configuration</h1>
+            <div class="credentials-section">
+                <div class="input-fields">
+                    <div class="input-group">
+                        <input type="text" id="jellyfinHost" name="jellyfinHost" placeholder="Jellyfin Host (e.g., http://localhost:8096)">
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="jellyfinUserId" name="jellyfinUserId" placeholder="Jellyfin User ID">
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="jellyfinApiKey" name="jellyfinApiKey" placeholder="Jellyfin API Key">
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="tmdbApiKey" name="tmdbApiKey" placeholder="TMDB API Key">
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button id="saveCredsBtn">Save Credentials</button>
+                    <button id="purgeCredsBtn">Purge Credentials</button>
+                    <button id="startAutomationBtn">Automate New</button>
+                    <button id="stopAutomationBtn">Stop Automation</button>
+                </div>
+            </div>
+            <div id="messageArea"></div>
+        </div>
+
+        <!-- Search Movies Section -->
+        <div class="search-container">
+            <div class="search-section">
+                <input type="text" id="searchInput" placeholder="Search movies...">
+                <button id="searchBtn">Search</button>
+            </div>
+        </div>
+
+        <!-- Dynamic Output Area -->
+        <div class="output-area-container">
+            <p class="placeholder-text">Movie list and posters will appear here.</p>
+        </div>
+
+        <!-- Fetch Movies Button -->
+        <div class="fetch-button-container">
+            <button id="fetchMoviesBtn">Fetch Movie List</button>
+        </div>
+    </div>
+
+    <!-- Footer Status Bars -->
+    <div class="footer-status-bars">
+        <div id="statusBar2">App Ready</div>
+        <div id="statusBar1" class="status-connecting">Connecting to backend...</div>
+    </div>
+
+    <script>
+        const backendBaseUrl = 'http://127.0.0.1:8000'; 
+        
+        // DOM Element References
+        const statusBar1 = document.getElementById('statusBar1'); 
+        const statusBar2 = document.getElementById('statusBar2'); 
+        const messageArea = document.getElementById('messageArea'); 
+        const jellyfinHostInput = document.getElementById('jellyfinHost');
+        const jellyfinUserIdInput = document.getElementById('jellyfinUserId');
+        const jellyfinApiKeyInput = document.getElementById('jellyfinApiKey');
+        const tmdbApiKeyInput = document.getElementById('tmdbApiKey');
+        const saveCredsBtn = document.getElementById('saveCredsBtn');
+        const purgeCredsBtn = document.getElementById('purgeCredsBtn');
+        const startAutomationBtn = document.getElementById('startAutomationBtn');
+        const stopAutomationBtn = document.getElementById('stopAutomationBtn');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const outputAreaContainer = document.querySelector('.output-area-container');
+        const fetchMoviesBtn = document.getElementById('fetchMoviesBtn');
+
+        // State Variables
+        let currentSortColumn = 'Name';
+        let currentSortOrder = 'asc';
+        let headerElements = {};
+        let currentView = 'movie-list'; 
+        let selectedPosterPath = null; 
+        let currentMovieContext = {}; 
+        let automationStatusInterval = null;
+        let lastLoggedActivity = ""; // To prevent duplicate log entries
+        let lastLoggedSummary = "";
+
+        const maskedPlaceholderText = "******** (Set, type to change)";
+        const originalPlaceholders = {
+            jellyfinUserId: "Jellyfin User ID",
+            jellyfinApiKey: "Jellyfin API Key",
+            tmdbApiKey: "TMDB API Key"
+        };
+        
+        // --- UI & View Management ---
+
+        function renderAutomationLogView() {
+            if (currentView === 'automation-log') return; // Already in log view
+            
+            outputAreaContainer.innerHTML = '';
+            currentView = 'automation-log';
+            lastLoggedActivity = ""; // Reset for new log session
+            lastLoggedSummary = "";
+            fetchMoviesBtn.textContent = 'Back to Movie List'; // Update button text
+
+            const header = document.createElement('div');
+            header.className = 'automation-log-header';
+            header.textContent = 'Automation Log';
+            outputAreaContainer.appendChild(header);
+
+            const logContainer = document.createElement('div');
+            logContainer.id = 'automationLogContainer';
+            logContainer.className = 'automation-log-container';
+            outputAreaContainer.appendChild(logContainer);
+            
+            addLogEntry("Automation log view initialized.", "INFO");
+
+            // Start faster polling for logs
+            if (automationStatusInterval) clearInterval(automationStatusInterval);
+            automationStatusInterval = setInterval(fetchAutomationStatus, 2000); // Check every 2 seconds
+        }
+
+        function addLogEntry(message, level = 'INFO') {
+            const logContainer = document.getElementById('automationLogContainer');
+            if (!logContainer) return; // Exit if log view is not active
+
+            const entry = document.createElement('p');
+            entry.className = `log-entry level-${level}`;
+            
+            const timestampSpan = document.createElement('span');
+            timestampSpan.className = 'log-entry-timestamp';
+            timestampSpan.textContent = `[${new Date().toLocaleTimeString()}]`;
+            
+            entry.appendChild(timestampSpan);
+            entry.appendChild(document.createTextNode(message));
+            
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll to bottom
+        }
+
+        // --- Automation ---
+
+        async function fetchAutomationStatus() {
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/automation/status`);
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({detail: "Failed to parse error"}));
+                    updateAppStatus(`Could not get automation status: ${errData.detail || response.statusText}`, 'critical');
+                    // Stop polling on critical error to avoid spamming
+                    if (automationStatusInterval) clearInterval(automationStatusInterval);
+                    return;
+                }
+                const status = await response.json();
+                
+                // Update buttons regardless of view
+                const credsResponse = await fetch(`${backendBaseUrl}/api/config`);
+                let credsAreSet = false;
+                if(credsResponse.ok) credsAreSet = (await credsResponse.json()).are_all_set;
+
+                startAutomationBtn.disabled = !credsAreSet || status.is_active;
+                stopAutomationBtn.disabled = !status.is_active && !status.stop_requested; // Only enable if it's running or stop is pending
+
+                if (currentView === 'automation-log') {
+                    // Update the log view
+                    if (status.current_activity && status.current_activity !== lastLoggedActivity) {
+                        addLogEntry(status.current_activity, 'INFO');
+                        lastLoggedActivity = status.current_activity;
+                    }
+                    if (status.last_run_summary && status.last_run_summary !== lastLoggedSummary) {
+                        const level = status.last_run_summary.toLowerCase().includes("fail") ? "ERROR" : "SUCCESS";
+                        addLogEntry(`--- Summary --- \n${status.last_run_summary}`, level);
+                        lastLoggedSummary = status.last_run_summary;
+                    }
+                } else {
+                    // Update the status bar as before
+                    updateAppStatus(`Automation: ${status.current_activity || "Idle"}`, 'automation');
+                }
+
+            } catch (error) {
+                console.error("Error fetching automation status:", error);
+                updateAppStatus("Could not get automation status (network error).", 'critical');
+                if (automationStatusInterval) clearInterval(automationStatusInterval);
+            }
+        }
+
+        startAutomationBtn.addEventListener('click', async () => {
+            renderAutomationLogView(); // Switch to log view immediately
+            addLogEntry('Requesting automation start...', 'INFO');
+            
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/automation/start`, { method: 'POST' });
+                const data = await response.json();
+                if (response.ok) {
+                    addLogEntry(data.message, 'SUCCESS');
+                } else {
+                    addLogEntry(`Failed to start automation: ${data.detail || response.statusText}`, 'ERROR');
+                }
+            } catch (error) {
+                console.error("Error starting automation:", error);
+                addLogEntry('Error starting automation (network).', 'CRITICAL');
+            }
+            fetchAutomationStatus(); // Refresh status right away
+        });
+
+        stopAutomationBtn.addEventListener('click', async () => {
+            if (currentView === 'automation-log') addLogEntry('Requesting automation stop...', 'WARN');
+            stopAutomationBtn.disabled = true;
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/automation/stop`, { method: 'POST' });
+                const data = await response.json();
+                if (response.ok) {
+                    if (currentView === 'automation-log') addLogEntry(data.message, 'SUCCESS');
+                } else {
+                     if (currentView === 'automation-log') addLogEntry(`Failed to stop automation: ${data.detail || response.statusText}`, 'ERROR');
+                }
+            } catch (error) {
+                console.error("Error stopping automation:", error);
+                if (currentView === 'automation-log') addLogEntry('Error stopping automation (network).', 'CRITICAL');
+            }
+            fetchAutomationStatus(); // Refresh status
+        });
+
+
+        // --- Existing Code (with minor modifications) ---
+        
+        // (Function skeletons for brevity, full logic is the same unless noted)
+        function displayCredentialMessage(message, isSuccess) { /* ... unchanged ... */ 
+            messageArea.textContent = message;
+            messageArea.className = isSuccess ? 'message-success' : 'message-error';
+            setTimeout(() => { messageArea.textContent = ''; messageArea.className = ''; }, 5000);
+        }
+        function updateAppStatus(message, type = 'info') { /* ... unchanged ... */ 
+             statusBar2.textContent = message;
+             statusBar2.className = `status-${type}`;
+        }
+        function updateInputFields(maskedCreds) { /* ... unchanged ... */ 
+            jellyfinHostInput.value = maskedCreds.jellyfin_host || '';
+            const fields = [
+                { input: jellyfinUserIdInput, set: maskedCreds.jellyfin_user_id_set, placeholder: originalPlaceholders.jellyfinUserId },
+                { input: jellyfinApiKeyInput, set: maskedCreds.jellyfin_api_key_set, placeholder: originalPlaceholders.jellyfinApiKey },
+                { input: tmdbApiKeyInput, set: maskedCreds.tmdb_api_key_set, placeholder: originalPlaceholders.tmdbApiKey }
+            ];
+            fields.forEach(f => {
+                f.input.value = '';
+                f.input.placeholder = f.set ? maskedPlaceholderText : f.placeholder;
+                f.set ? f.input.classList.add('is-set') : f.input.classList.remove('is-set');
+            });
+            saveCredsBtn.disabled = maskedCreds.are_all_set;
+            purgeCredsBtn.disabled = !maskedCreds.are_all_set && !maskedCreds.jellyfin_host;
+        }
+        function handleInputInteraction(event) { /* ... unchanged ... */ 
+            const inputElement = event.target;
+            if (inputElement.placeholder === maskedPlaceholderText) {
+                inputElement.placeholder = originalPlaceholders[inputElement.id];
+                inputElement.classList.remove('is-set');
+            }
+            if(saveCredsBtn.disabled) saveCredsBtn.disabled = false;
+        }
+        async function loadCredentials() { /* ... unchanged ... */ 
+            updateAppStatus('Loading credentials...', 'info');
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/config`);
+                if (response.ok) {
+                    const maskedCreds = await response.json();
+                    updateInputFields(maskedCreds);
+                    updateAppStatus(maskedCreds.are_all_set ? 'Credentials loaded.' : 'No saved credentials found.', 'info');
+                    fetchAutomationStatus(); 
+                } else {
+                    displayCredentialMessage(`Error loading config: ${response.status}`, false);
+                    updateInputFields({}); updateAppStatus('Failed to load credentials.', 'critical');
+                }
+            } catch (error) {
+                displayCredentialMessage('Failed to fetch config. Backend might be down.', false);
+                updateInputFields({}); updateAppStatus('Error fetching config.', 'critical');
+            }
+        }
+        saveCredsBtn.addEventListener('click', async () => { /* ... unchanged, complex logic preserved ... */
+            updateAppStatus('Saving credentials...', 'info'); 
+            const host = jellyfinHostInput.value;
+            let userId = jellyfinUserIdInput.value;
+            let jfApiKey = jellyfinApiKeyInput.value;
+            let tmdbKey = tmdbApiKeyInput.value;
+            let allFieldsProvided = true;
+            if (!host) allFieldsProvided = false;
+            if (!userId && !jellyfinUserIdInput.classList.contains('is-set')) allFieldsProvided = false;
+            if (!jfApiKey && !jellyfinApiKeyInput.classList.contains('is-set')) allFieldsProvided = false;
+            if (!tmdbKey && !tmdbApiKeyInput.classList.contains('is-set')) allFieldsProvided = false;
+
+            if (!allFieldsProvided) {
+                displayCredentialMessage('All credential fields must be filled to save.', false);
+                updateAppStatus('Save failed: fields missing.', 'critical'); return;
+            }
+            const credentials = {jellyfin_host: host, jellyfin_user_id: userId, jellyfin_api_key: jfApiKey, tmdb_api_key: tmdbKey };
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/config`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(credentials)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    displayCredentialMessage(data.message, true); loadCredentials(); 
+                } else {
+                    displayCredentialMessage(data.detail || 'Failed to save credentials.', false); updateAppStatus('Save failed.', 'critical');
+                }
+            } catch (error) {
+                displayCredentialMessage('Error saving credentials. Backend might be down.', false); updateAppStatus('Save error.', 'critical');
+            }
+        });
+        purgeCredsBtn.addEventListener('click', async () => { /* ... unchanged ... */ 
+            if (!confirm("Are you sure? This cannot be undone.")) return;
+            updateAppStatus('Purging credentials...', 'warning');
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/config`, { method: 'DELETE' });
+                const data = await response.json();
+                if (response.ok) {
+                    displayCredentialMessage(data.message, true); loadCredentials();
+                } else {
+                    displayCredentialMessage(data.detail || 'Failed to purge credentials.', false); updateAppStatus('Purge failed.', 'critical');
+                }
+            } catch (error) {
+                displayCredentialMessage('Error purging credentials. Backend might be down.', false); updateAppStatus('Purge error.', 'critical');
+            }
+        });
+        async function checkBackendHealth() { /* ... unchanged ... */ 
+            statusBar1.classList.remove('status-connecting', 'status-disconnected', 'status-error', 'status-connected'); 
+            statusBar1.textContent = 'Pinging Backend...'; statusBar1.classList.add('status-connecting');
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/health`);
+                statusBar1.classList.remove('status-connecting'); 
+                if (response.ok) {
+                    statusBar1.textContent = 'Connected to Backend'; statusBar1.classList.add('status-connected');
+                } else {
+                    statusBar1.textContent = `Server Error: ${response.status}`; statusBar1.classList.add('status-disconnected');
+                }
+            } catch (error) {
+                statusBar1.classList.remove('status-connecting'); 
+                statusBar1.textContent = 'Disconnected'; statusBar1.classList.add('status-disconnected');
+            }
+        }
+        function formatBitrateForDisplayJS(bitrateMbps) { /* ... unchanged ... */ 
+            if (bitrateMbps === null || typeof bitrateMbps === 'undefined' || isNaN(bitrateMbps)) return "";
+            const sInt = String(Math.floor(bitrateMbps)); const intLen = sInt.length;
+            const MAX_NUM_STRING_LENGTH = 6, MAX_DECIMAL_PLACES = 1;
+            if (intLen >= MAX_NUM_STRING_LENGTH) return `${parseFloat(bitrateMbps).toFixed(0)}`.substring(0, MAX_NUM_STRING_LENGTH);
+            let numDecimalPlaces = 0;
+            if (MAX_NUM_STRING_LENGTH - intLen - 1 >= 0) numDecimalPlaces = Math.min(MAX_NUM_STRING_LENGTH - intLen - 1, MAX_DECIMAL_PLACES);
+            return `${parseFloat(bitrateMbps).toFixed(numDecimalPlaces)}`;
+        }
+        function getMovieDisplayDetails(movie) { /* ... unchanged ... */ 
+            if (!movie || typeof movie !== 'object') return { name: "Error: Invalid Data", resolution: "-", hdr: "-", bitrate: "-", year: "-" };
+            const details = { name: movie.Name || "?", resolution: "", hdr: "", bitrate: "", year: movie.ProductionYear || "" };
+            if (movie.MediaStreams && Array.isArray(movie.MediaStreams)) {
+                const videoStream = movie.MediaStreams.find(s => s.Type === "Video");
+                if (videoStream) {
+                    const dt = (videoStream.DisplayTitle || "").toUpperCase(); const vrt = (videoStream.VideoRangeType || "").toUpperCase();
+                    if (dt.includes("4K") || dt.includes("2160P")) details.resolution = "4K"; else if (dt.includes("1080P")) details.resolution = "1080p"; else if (dt.includes("720P")) details.resolution = "720p";
+                    if (vrt.includes("DOVI") || dt.includes("DV")) details.hdr = "Dolby Vision"; else if (vrt.includes("HDR10PLUS")) details.hdr = "HDR10+"; else if (vrt.includes("HDR10")) details.hdr = "HDR10"; else if (vrt.includes("HDR")) details.hdr = "HDR";
+                    if (videoStream.BitRate) details.bitrate = `${formatBitrateForDisplayJS(videoStream.BitRate / 1000000)} Mbps`;
+                }
+            }
+            return details;
+        }
+        function updateSortIndicators() { /* ... unchanged ... */ 
+            const asc = ' ▲'; const desc = ' ▼';
+            for (const key in headerElements) {
+                const baseText = headerElements[key].dataset.baseText;
+                headerElements[key].textContent = baseText + (key === currentSortColumn ? (currentSortOrder === 'asc' ? asc : desc) : '');
+            }
+        }
+        function handleSort(sortKey) { /* ... unchanged ... */ 
+            currentSortOrder = currentSortColumn === sortKey && currentSortOrder === 'asc' ? 'desc' : 'asc';
+            currentSortColumn = sortKey; fetchAndRenderMovies(); 
+        }
+        async function fetchAndDisplayPosters(tmdbId, movieName, jellyfinId) { /* ... unchanged ... */ 
+            updateAppStatus(`Fetching posters for "${movieName}"...`, 'info');
+            outputAreaContainer.innerHTML = `<p class="placeholder-text">Loading posters...</p>`;
+            currentView = 'poster-grid'; currentMovieContext = { jellyfinId, movieName, tmdbId };
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/movies/${tmdbId}/posters`);
+                if (response.ok) {
+                    const posters = await response.json(); renderPosterGrid(posters, movieName, jellyfinId);
+                    updateAppStatus(`Displayed ${posters.length} posters for "${movieName}".`, 'info');
+                } else {
+                    const errorData = await response.json(); outputAreaContainer.innerHTML = `<p class="error-message">Error: ${errorData.detail}</p>`;
+                    updateAppStatus('Failed to fetch posters.', 'critical');
+                }
+            } catch (error) {
+                outputAreaContainer.innerHTML = `<p class="error-message">Network error fetching posters.</p>`; updateAppStatus('Error.', 'critical');
+            }
+        }
+        async function setBanneredPoster(jellyfinIdToSet, tmdbPosterPathToSet, movieNameToSet) { /* ... unchanged ... */ 
+            updateAppStatus(`Setting poster for "${movieNameToSet}"...`, 'info');
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/movies/${jellyfinIdToSet}/set-bannered-poster`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tmdb_poster_path: tmdbPosterPathToSet })
+                });
+                const data = await response.json();
+                if (response.ok && data.bannered_image_base64) {
+                    displayFinalAppliedPoster(data.bannered_image_base64, movieNameToSet, currentMovieContext.tmdbId, jellyfinIdToSet);
+                    updateAppStatus(data.message, 'success');
+                } else {
+                    updateAppStatus(`Failed to set poster: ${data.detail}`, 'critical');
+                }
+            } catch (error) {
+                updateAppStatus('Error setting poster.', 'critical');
+            }
+        }
+        function displayFinalAppliedPoster(base64, movieName, tmdbId, jellyfinId) { /* ... unchanged ... */ 
+            outputAreaContainer.innerHTML = ''; currentView = 'final-poster-view';
+            const header = document.createElement('div'); header.className = 'final-poster-header'; header.textContent = `Applied Poster: ${movieName}`;
+            const scrollWrapper = document.createElement('div'); scrollWrapper.className = 'final-poster-scroll-wrapper';
+            const viewContainer = document.createElement('div'); viewContainer.className = 'final-poster-view';
+            const img = document.createElement('img'); img.src = `data:image/png;base64,${base64}`;
+            const backButton = document.createElement('button'); backButton.textContent = 'Back to Posters';
+            backButton.onclick = () => fetchAndDisplayPosters(tmdbId, movieName, jellyfinId);
+            viewContainer.append(img, backButton); scrollWrapper.appendChild(viewContainer);
+            outputAreaContainer.append(header, scrollWrapper);
+        }
+        function renderPosterGrid(posters, movieName, jellyfinId) { /* ... unchanged ... */ 
+            outputAreaContainer.innerHTML = ''; currentView = 'poster-grid';
+            const header = document.createElement('div'); header.className = 'poster-grid-header'; header.textContent = `Posters for: ${movieName}`;
+            const scrollWrapper = document.createElement('div'); scrollWrapper.className = 'poster-grid-scroll-wrapper';
+            const grid = document.createElement('div'); grid.className = 'poster-grid';
+            if (!posters || posters.length === 0) {
+                grid.innerHTML = `<p class="info-message">No English posters found.</p>`;
+            } else {
+                posters.forEach(p => {
+                    const item = document.createElement('div'); item.className = 'poster-item';
+                    const img = document.createElement('img'); img.src = `https://image.tmdb.org/t/p/w342${p.file_path}`;
+                    item.appendChild(img);
+                    item.ondblclick = () => setBanneredPoster(jellyfinId, p.file_path, movieName);
+                    grid.appendChild(item);
+                });
+            }
+            scrollWrapper.appendChild(grid); outputAreaContainer.append(header, scrollWrapper);
+        }
+        function renderMovieList(movies) { /* ... unchanged ... */ 
+            outputAreaContainer.innerHTML = ''; currentView = 'movie-list'; headerElements = {};
+            const headerRow = document.createElement('div'); headerRow.className = 'movie-list-header';
+            const columns = [ { key: 'Name', text: 'Name' }, { key: 'Resolution', text: 'Res' }, { key: 'HDR', text: 'HDR' }, { key: 'Bitrate', text: 'Bitrate' }, { key: 'Year', text: 'Year' } ];
+            columns.forEach((col, i) => {
+                const cell = document.createElement('div'); cell.className = `col-${col.key.toLowerCase()}`;
+                cell.textContent = col.text; cell.dataset.baseText = col.text;
+                cell.onclick = () => handleSort(col.key); headerElements[col.key] = cell; headerRow.appendChild(cell);
+            });
+            const scrollWrapper = document.createElement('div'); scrollWrapper.className = 'movie-list-scroll-wrapper';
+            if (!movies || movies.length === 0) {
+                scrollWrapper.innerHTML = `<p class="info-message">No movies found.</p>`;
+            } else {
+                movies.forEach(m => {
+                    const details = getMovieDisplayDetails(m); const row = document.createElement('div'); row.className = 'movie-item-row';
+                    row.innerHTML = `<div class="col-name">${details.name}</div><div class="col-res">${details.resolution}</div><div class="col-hdr">${details.hdr}</div><div class="col-bitrate">${details.bitrate}</div><div class="col-year">${details.year}</div>`;
+                    row.ondblclick = () => { if (m.TmdbId) fetchAndDisplayPosters(m.TmdbId, m.Name, m.JellyfinId); else updateAppStatus(`No TMDB ID for '${m.Name}'.`, 'warning'); };
+                    scrollWrapper.appendChild(row);
+                });
+            }
+            outputAreaContainer.append(headerRow, scrollWrapper); updateSortIndicators();
+        }
+        async function fetchAndRenderMovies(isFullFetch = false) { /* ... unchanged ... */
+            // Reset to slower polling interval when leaving log view
+            if (currentView === 'automation-log' && automationStatusInterval) {
+                clearInterval(automationStatusInterval);
+                automationStatusInterval = setInterval(fetchAutomationStatus, 10000); // Back to 10s
+            }
+            fetchMoviesBtn.textContent = 'Fetch Movie List';
+            let searchTerm = isFullFetch ? '' : searchInput.value.trim();
+            updateAppStatus(`Fetching movie list...`, 'info');
+            outputAreaContainer.innerHTML = '<p class="placeholder-text">Loading movies...</p>';
+            const url = new URL(`${backendBaseUrl}/api/movies`);
+            url.searchParams.append('sort_by', currentSortColumn); url.searchParams.append('sort_order', currentSortOrder);
+            if (searchTerm) url.searchParams.append('search', searchTerm);
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const movies = await response.json(); renderMovieList(movies);
+                    updateAppStatus(`Fetched ${movies.length} movies.`, 'info');
+                } else {
+                    const errorData = await response.json(); outputAreaContainer.innerHTML = `<p class="error-message">Error: ${errorData.detail}</p>`;
+                    updateAppStatus('Failed to fetch movies.', 'critical');
+                }
+            } catch (error) {
+                outputAreaContainer.innerHTML = `<p class="error-message">Network error fetching movies.</p>`; updateAppStatus('Error.', 'critical');
+            }
+        }
+        
+        // --- Event Listeners & Initial Load ---
+        fetchMoviesBtn.addEventListener('click', () => fetchAndRenderMovies(true)); 
+        searchBtn.addEventListener('click', () => fetchAndRenderMovies(false));     
+        searchInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') fetchAndRenderMovies(false); });
+        [jellyfinUserIdInput, jellyfinApiKeyInput, tmdbApiKeyInput, jellyfinHostInput].forEach(input => {
+            input.addEventListener('focus', handleInputInteraction);
+            input.addEventListener('input', handleInputInteraction); 
+        });
+
+        window.onload = () => {
+            checkBackendHealth(); 
+            loadCredentials(); 
+            if (automationStatusInterval) clearInterval(automationStatusInterval);
+            automationStatusInterval = setInterval(fetchAutomationStatus, 10000); // Default 10s poll
+        };
+    </script>
+</body>
+</html>
